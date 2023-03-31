@@ -32,14 +32,11 @@ fn main() {
 			None => line,
 			Some(i) => {
 				let mut aligned = String::with_capacity(line.len() + alignment - i);
-				for (j, c) in line.char_indices() {
-					if j == i {
-						for _ in 0..(alignment - i) {
-							aligned.push(' ');
-						}
-					}
-					aligned.push(c);
+				aligned.push_str(&line[0..i]);
+				for _ in 0..(alignment - i) {
+					aligned.push(' ');
 				}
+				aligned.push_str(&line[i..line.len()]);
 				aligned
 			}
 		});
