@@ -13,7 +13,12 @@ fn main() {
 				.map(|m| m.start())
 		})
 		.collect();
-	let alignment: usize = matches.iter().flatten().copied().max().expect("need matching lines");
+	let Some(alignment) = matches.iter().flatten().copied().max() else {
+		for line in stdin {
+			println!("{}", line);
+		}
+		return;
+	};
 	for (line, match_index) in iter::zip(stdin.into_iter(), matches.into_iter()) {
 		println!("{}", match match_index {
 			None => line,
