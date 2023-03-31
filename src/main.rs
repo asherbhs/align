@@ -3,19 +3,36 @@ use regex::Regex;
 
 fn main() {
 	// interpret the first argument as the regex to be matched
-	let regex_string = &env::args().nth(1).expect("regex should be provided");
+	let args: Vec<String> = env::args().collect();
+	let (regex_string, after): (&str, bool) = match args.len() {
+		2 => (&args[1], false),
+		3 if args[1].as_str() == "-a" || args[1].as_str() == "--after" => (&args[2], true),
+		_ => panic!("invalid arguments"),
+	};
 	let regex = Regex::new(regex_string).expect("regex should be legal");
 
 	// get the byte indices of the matches
 	let stdin: Vec<String> = io::stdin().lines().collect::<Result<_, _>>().expect("should get input");
-	let matches: Vec<Option<usize>> = stdin
-		.iter()
-		.map(|line| {
-			regex
-				.find(line)
-				.map(|m| m.start())
-		})
-		.collect();
+	let matches: Vec<Option<usize>> =
+		if after {
+			stdin
+				.iter()
+				.map(|line| {
+					regex
+						.find(line)
+						.map(|m| m.end())
+				})
+				.collect()
+		} else {
+			stdin
+				.iter()
+				.map(|line| {
+					regex
+						.find(line)
+						.map(|m| m.start())
+				})
+				.collect()
+		};
 
 	// get the maximum offset of the regex across all strings
 	// if there are no matches, just echo stdin
