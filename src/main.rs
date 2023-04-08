@@ -1,25 +1,30 @@
-use std::{env, io, iter};
+use std::{io, iter};
+
+use clap::Parser;
 use regex::Regex;
 
+#[derive(Parser)]
+struct Args {
+	regex: String,
+	#[arg(short, long)] after: bool,
+	#[arg(short, long)] skip:  Option<usize>,
+}
+
 fn main() {
-	// interpret the first argument as the regex to be matched
-	let args: Vec<String> = env::args().collect();
-	let (regex_string, after): (&str, bool) = match args.len() {
-		2 => (&args[1], false),
-		3 if args[1].as_str() == "-a" || args[1].as_str() == "--after" => (&args[2], true),
-		_ => panic!("invalid arguments"),
-	};
-	let regex = Regex::new(regex_string).expect("regex should be legal");
+	let args = Args::parse();
+	let regex = Regex::new(&args.regex).expect("regex should be legal");
 
 	// get the byte indices of the matches
 	let stdin: Vec<String> = io::stdin().lines().collect::<Result<_, _>>().expect("should get input");
 	let matches: Vec<Option<usize>> =
-		if after {
+		if args.after {
 			stdin
 				.iter()
 				.map(|line| {
 					regex
-						.find(line)
+						.find_iter(line)
+						.skip(args.skip.unwrap_or(0))
+						.nth(0)
 						.map(|m| m.end())
 				})
 				.collect()
@@ -28,7 +33,9 @@ fn main() {
 				.iter()
 				.map(|line| {
 					regex
-						.find(line)
+						.find_iter(line)
+						.skip(args.skip.unwrap_or(0))
+						.nth(0)
 						.map(|m| m.start())
 				})
 				.collect()
@@ -36,7 +43,12 @@ fn main() {
 
 	// get the maximum offset of the regex across all strings
 	// if there are no matches, just echo stdin
-	let Some(alignment) = matches.iter().flatten().copied().max() else {
+	let Some(alignment) = matches
+		.iter()
+		.flatten()
+		.copied()
+		.max()
+	else {
 		for line in stdin {
 			println!("{}", line);
 		}
