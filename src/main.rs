@@ -6,8 +6,12 @@ use regex::Regex;
 #[derive(Parser)]
 struct Args {
 	regex: String,
-	#[arg(short, long)] after: bool,
-	#[arg(short, long)] skip:  Option<usize>,
+	#[arg(short, long)]
+	after: bool,
+	#[arg(short, long, default_value_t = ' ')]
+	char: char,
+	#[arg(short, long, default_value_t = 0)]
+	skip: usize,
 }
 
 fn main() {
@@ -20,7 +24,7 @@ fn main() {
 		.collect::<Result<_, _>>()
 		.expect("should get input");
 	let matches = stdin.iter().map(|line|
-		regex.find_iter(line).nth(args.skip.unwrap_or(0))
+		regex.find_iter(line).nth(args.skip)
 	);
 	let offsets: Vec<Option<usize>> =
 		if args.after {
@@ -51,7 +55,7 @@ fn main() {
 				let mut aligned = String::with_capacity(line.len() + alignment - i);
 				aligned.push_str(&line[0..i]);
 				for _ in 0..(alignment - i) {
-					aligned.push(' ');
+					aligned.push(args.char);
 				}
 				aligned.push_str(&line[i..line.len()]);
 				aligned
