@@ -15,35 +15,23 @@ fn main() {
 	let regex = Regex::new(&args.regex).expect("regex should be legal");
 
 	// get the byte indices of the matches
-	let stdin: Vec<String> = io::stdin().lines().collect::<Result<_, _>>().expect("should get input");
-	let matches: Vec<Option<usize>> =
+	let stdin: Vec<String> = io::stdin()
+		.lines()
+		.collect::<Result<_, _>>()
+		.expect("should get input");
+	let matches = stdin.iter().map(|line|
+		regex.find_iter(line).nth(args.skip.unwrap_or(0))
+	);
+	let offsets: Vec<Option<usize>> =
 		if args.after {
-			stdin
-				.iter()
-				.map(|line| {
-					regex
-						.find_iter(line)
-						.skip(args.skip.unwrap_or(0))
-						.nth(0)
-						.map(|m| m.end())
-				})
-				.collect()
+			matches.map(|om| om.map(|m| m.end())).collect()
 		} else {
-			stdin
-				.iter()
-				.map(|line| {
-					regex
-						.find_iter(line)
-						.skip(args.skip.unwrap_or(0))
-						.nth(0)
-						.map(|m| m.start())
-				})
-				.collect()
+			matches.map(|om| om.map(|m| m.start())).collect()
 		};
 
 	// get the maximum offset of the regex across all strings
 	// if there are no matches, just echo stdin
-	let Some(alignment) = matches
+	let Some(alignment) = offsets
 		.iter()
 		.flatten()
 		.copied()
@@ -56,8 +44,8 @@ fn main() {
 	};
 
 	// output the lines of the input, with the regex match padded with spaces to align with all other matches
-	for (line, match_index) in iter::zip(stdin.into_iter(), matches.into_iter()) {
-		println!("{}", match match_index {
+	for (line, offset) in iter::zip(stdin.into_iter(), offsets.into_iter()) {
+		println!("{}", match offset {
 			None => line,
 			Some(i) => {
 				let mut aligned = String::with_capacity(line.len() + alignment - i);
